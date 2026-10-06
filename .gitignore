@@ -1,0 +1,8 @@
+build/
+.venv/
+*.cf
+work-obj08.cf
+*.o
+*.vcd
+*.ghw
+oss-cad-suite/
