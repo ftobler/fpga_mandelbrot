@@ -50,7 +50,7 @@ begin
                     end if;
 
                 when DATA_SEND =>
-                    if data_latched(to_integer(bit_counter)) = '1' then
+                    if data_latched(LED_COUNT * 24 - 1) = '1' then
                         if delay_counter < DELAY_1_HIGH then
                             ws2812_out <= '1';
                         else
@@ -68,6 +68,7 @@ begin
                         delay_counter <= delay_counter + 1;
                     else
                         delay_counter <= (others => '0');
+                        data_latched <= data_latched(LED_COUNT * 24 - 2 downto 0) & '0';  -- shift
                         -- decide slower branch
                         if bit_counter > 0 then
                             bit_counter <= bit_counter - 1;
