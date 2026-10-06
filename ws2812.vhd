@@ -23,7 +23,7 @@ end entity ws2812_entity;
 architecture rtl of ws2812_entity is
     type StateType is (RESET, DATA_SEND);
     signal state : StateType := RESET;
-    signal delay_counter : unsigned(14 downto 0) := (others => '0');
+    signal delay_counter : unsigned(14 downto 0) := to_unsigned(DELAY_RESET, 15);
     signal bit_counter : unsigned(4 downto 0) := (others => '0');
     signal led_counter : unsigned(4 downto 0) := (others => '0');
     signal data_latched : std_logic_vector(LED_COUNT * 24 - 1 downto 0) := (others => '0');
@@ -38,47 +38,45 @@ begin
                     -- led output is low during reset
                     ws2812_out <= '0';
 
-                    -- count up for the reset delay
-                    if delay_counter < DELAY_RESET then
-                        delay_counter <= delay_counter + 1;
+                    -- count down for the reset delay
+                    if delay_counter /= 0 then
+                        delay_counter <= delay_counter - 1;
                     else
                         state <= DATA_SEND;
                         bit_counter <= to_unsigned(23, bit_counter'length);
-                        led_counter <= (others => '0');
-                        delay_counter <= (others => '0');
+                        led_counter <= to_unsigned(LED_COUNT - 1, led_counter'length);
+                        delay_counter <= to_unsigned(DELAY_TOTAL, delay_counter'length);
                         data_latched <= data;
                     end if;
 
                 when DATA_SEND =>
                     if data_latched(LED_COUNT * 24 - 1) = '1' then
-                        if delay_counter < DELAY_1_HIGH then
+                        if delay_counter = DELAY_1_HIGH then
                             ws2812_out <= '1';
-                        else
-                            ws2812_out <= '0';
                         end if;
                     else
-                        if delay_counter < DELAY_0_HIGH then
+                        if delay_counter = DELAY_0_HIGH then
                             ws2812_out <= '1';
-                        else
-                            ws2812_out <= '0';
                         end if;
                     end if;
 
-                    if delay_counter < DELAY_TOTAL then
-                        delay_counter <= delay_counter + 1;
+                    if delay_counter /= 0 then
+                        delay_counter <= delay_counter - 1;
                     else
-                        delay_counter <= (others => '0');
+                        delay_counter <= to_unsigned(DELAY_TOTAL, delay_counter'length);
+                        ws2812_out <= '0';
                         data_latched <= data_latched(LED_COUNT * 24 - 2 downto 0) & '0';  -- shift
                         -- decide slower branch
-                        if bit_counter > 0 then
+                        if bit_counter /= 0 then
                             bit_counter <= bit_counter - 1;
                         else
                             bit_counter <= to_unsigned(23, bit_counter'length);
                             -- decide slower branch
-                            if led_counter < LED_COUNT - 1 then
-                                led_counter <= led_counter + 1;
+                            if led_counter /= 0 then
+                                led_counter <= led_counter - 1;
                             else
-                                led_counter <= (others => '0');
+                                led_counter <= to_unsigned(LED_COUNT - 1, led_counter'length);
+                                delay_counter <= to_unsigned(DELAY_RESET, delay_counter'length);
                                 state <= RESET;  -- go out (shows the color)
                             end if;
                         end if;
