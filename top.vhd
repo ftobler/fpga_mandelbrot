@@ -29,6 +29,11 @@ begin
         end if;
     end process;
 
-    led <= (others => not blink);
+    led(0) <= blink;
+    led(1) <= not blink;
+    led(2) <= blink;
+    led(3) <= not blink;
+    led(4) <= blink;
+    led(5) <= not blink;
 
 end rtl;
