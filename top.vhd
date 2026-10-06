@@ -18,7 +18,7 @@ architecture rtl of top is
     signal counter : unsigned(23 downto 0) := (others => '0');
     signal blink   : std_logic             := '0';
 
-    signal ws2812_data : std_logic_vector(23 downto 0) := (others => '0');
+    signal ws2812_data : std_logic_vector(23 downto 0) := x"000000";
 
     component ws2812_entity
         generic (
@@ -52,6 +52,7 @@ begin
     led(3) <= not blink;
     led(4) <= blink;
     led(5) <= not blink;
+    ws2812_data <= x"0F0000" when blink = '1' else x"000F00";
 
     ws2812_module_inst : ws2812_entity
         generic map (
