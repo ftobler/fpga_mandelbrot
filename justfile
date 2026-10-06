@@ -10,6 +10,9 @@ build  := "build"
 venv   := ".venv"
 oss    := "oss-cad-suite/bin"
 
+# VHDL sources, dependencies first (top-level last)
+sources := "ws2812.vhd " + top + ".vhd"
+
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 # list available recipes
@@ -25,13 +28,13 @@ venv:
 # analyze and elaborate the design (fast syntax check)
 check:
     @mkdir -p {{build}}
-    ghdl -a --std=08 --workdir={{build}} {{top}}.vhd
+    ghdl -a --std=08 --workdir={{build}} {{sources}}
     ghdl -e --std=08 --workdir={{build}} {{top}}
 
 # synthesize, place & route, pack a bitstream
 build: check
     @mkdir -p {{build}}
-    ghdl synth --std=08 --workdir={{build}} --out=verilog {{top}}.vhd -e {{top}} > {{build}}/{{top}}.v
+    ghdl synth --std=08 --workdir={{build}} --out=verilog {{sources}} -e {{top}} > {{build}}/{{top}}.v
     yosys -p "read_verilog {{build}}/{{top}}.v; synth_gowin -top {{top}} -family gw2a -json {{build}}/{{top}}.json"
     {{oss}}/nextpnr-himbaechel --json {{build}}/{{top}}.json --write {{build}}/{{top}}_pnr.json \
         --device {{device}} --vopt family={{family}} --vopt cst={{cst}} --timing-allow-fail
@@ -40,7 +43,7 @@ build: check
 # run the GHDL testbench
 test:
     @mkdir -p {{build}}
-    ghdl -a --std=08 --workdir={{build}} {{top}}.vhd {{tb}}.vhd
+    ghdl -a --std=08 --workdir={{build}} {{sources}} {{tb}}.vhd
     ghdl -e --std=08 --workdir={{build}} {{tb}}
     ghdl -r --std=08 --workdir={{build}} {{tb}} --stop-time=10us
 
