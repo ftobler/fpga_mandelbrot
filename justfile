@@ -24,13 +24,14 @@ venv:
 
 # analyze and elaborate the design (fast syntax check)
 check:
-    ghdl -a --std=08 {{top}}.vhd
-    ghdl -e --std=08 {{top}}
+    @mkdir -p {{build}}
+    ghdl -a --std=08 --workdir={{build}} {{top}}.vhd
+    ghdl -e --std=08 --workdir={{build}} {{top}}
 
 # synthesize, place & route, pack a bitstream
-build: check venv
+build: check
     @mkdir -p {{build}}
-    ghdl synth --std=08 --out=verilog {{top}}.vhd -e {{top}} > {{build}}/{{top}}.v
+    ghdl synth --std=08 --workdir={{build}} --out=verilog {{top}}.vhd -e {{top}} > {{build}}/{{top}}.v
     yosys -p "read_verilog {{build}}/{{top}}.v; synth_gowin -top {{top}} -family gw2a -json {{build}}/{{top}}.json"
     {{oss}}/nextpnr-himbaechel --json {{build}}/{{top}}.json --write {{build}}/{{top}}_pnr.json \
         --device {{device}} --vopt family={{family}} --vopt cst={{cst}} --timing-allow-fail
@@ -38,9 +39,10 @@ build: check venv
 
 # run the GHDL testbench
 test:
-    ghdl -a --std=08 {{top}}.vhd {{tb}}.vhd
-    ghdl -e --std=08 {{tb}}
-    ghdl -r --std=08 {{tb}} --stop-time=10us
+    @mkdir -p {{build}}
+    ghdl -a --std=08 --workdir={{build}} {{top}}.vhd {{tb}}.vhd
+    ghdl -e --std=08 --workdir={{build}} {{tb}}
+    ghdl -r --std=08 --workdir={{build}} {{tb}} --stop-time=10us
 
 # load bitstream into SRAM (volatile, lost on power-off)
 load: build
